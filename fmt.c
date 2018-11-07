@@ -63,8 +63,7 @@ displaypacket(struct packet *p)
 	displaymac(p->eh->ether_shost);
 	printf(" -> ");
 	displaymac(p->eh->ether_dhost);
-	printf("\t");	
+	printf("\t(%d)\t", p->len);	
 	displaytype(p->eh->ether_type);
-	printf("\t(%d)", p->len);	
 	printf("\n");
 }
