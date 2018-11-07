@@ -1,5 +1,5 @@
 struct rawpacket {
-	char buf[4096];
+	char buf[1024];
 	int len;
 };
 
