@@ -18,11 +18,11 @@ usage(char * const *argv)
 int
 main(int argc, char * const *argv)
 {
-	int opt;
+	int opt, sock;
 	const char *device = NULL;
-
 	struct rawpacket rawpacket;
 	struct packet packet;
+
 	packet.eh = (struct ether_header *)rawpacket.buf;
 	packet.iph = (struct iphdr *)((rawpacket.buf) + sizeof(struct ether_header));
 	packet.buf = (char *)(rawpacket.buf + sizeof(struct ether_header) + sizeof(struct iphdr));
@@ -43,12 +43,12 @@ main(int argc, char * const *argv)
 		exit(1);
 	}
 
-	int s = rawsocket(device);
- 	if (s < 0)
+	sock = rawsocket(device);
+ 	if (sock < 0)
  		return 1;
 
 	while (1) {
-		if (readpacket(s, &rawpacket) != 0)
+		if (readpacket(sock, &rawpacket) != 0)
 			continue;
 		packet.len = rawpacket.len - (sizeof(struct ether_header) + sizeof(struct iphdr));
 		if (!filterpacket(&packet))
