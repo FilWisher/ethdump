@@ -9,7 +9,7 @@
 #include <net/if.h>
 #include <errno.h>
 
-#include "tcpmud.h"
+#include "ethdump.h"
 
 int
 rawsocket(const char *name)

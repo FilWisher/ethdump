@@ -7,7 +7,7 @@
 #include <net/ethernet.h>
 #include <linux/ip.h>
 
-#include "tcpmud.h"
+#include "ethdump.h"
 
 void
 usage(char * const *argv)

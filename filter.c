@@ -1,6 +1,6 @@
 #include <netinet/in.h>
 
-#include "tcpmud.h"
+#include "ethdump.h"
 
 enum {
 	Show,
