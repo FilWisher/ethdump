@@ -38,14 +38,14 @@ rawsocket(const char *name)
 
 // Read a single packet from the raw socket.
 int
-readpacket(int socket, struct packet *p)
+readpacket(int socket, struct rawpacket *p)
 {
-	int n = recvfrom(socket, p->buf, sizeof(p->buf), 0, 
-		(struct sockaddr *)&p->sender, &p->senderlen);
-	if (n < 0) {
+	p->len = recvfrom(socket, p->buf, sizeof(p->buf), 0, NULL, NULL);
+	printf("got len: %d\n", p->len);
+	if (p->len < 0) {
 		fprintf(stderr, "Error receiving packet: %s\n", strerror(errno));
 		return -1;
 	}
 
-	return n;
+	return 0;
 }
