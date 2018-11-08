@@ -175,6 +175,10 @@ yylex(void)
 		yylval.v.value.v.addr[i] = strtol(buf, NULL, 16);
 
 		if (i != ETH_ALEN - 1 && (c = getch(&src)) != ':') {
+			if (isdigit(c)) {
+				ungetch(c, &src);
+				goto number;
+			}
 			yyerror("Not a valid MAC address, expecting ':'");
 			return 1;
 		}
@@ -197,7 +201,7 @@ identifier:
 		return IDENTIFIER;
 	}
 
-	// numbers
+number:
 	if (isdigit(c = getch(&src))) {
 		*p++ = c;
 		// hex literal
