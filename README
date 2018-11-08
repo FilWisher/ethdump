@@ -1,0 +1,40 @@
+ETHDUMP(1)                                                                      
+
+NAME
+       ethdump - A bad imitation of tcpdump
+
+SYNOPSIS
+       ethdump [ -f filter ]
+               -i interface
+
+DESCRIPTION
+
+OPTIONS
+       -i     Specify the network interface to dump ethernet packets from.
+
+       -f     Define a filter. Only packets that match the filter will be
+              displayed.
+
+FILTERS
+
+    A filter is defined by:
+        
+        FIELD OPERATOR VALUE
+
+    FIELD describes a field of the packet and can be one of:
+        
+        src     The source MAC address of the ethernet packet.
+        dst     The destination MAC address of the ethernet packet
+        type    The type of the type of the ethernet packet (as defined by IEEE 802).
+
+    OPERATOR describes the comparison to make on the field. It can be one of:
+
+        ==      Equals
+        !=      Not equals
+
+    VALUE is an argument to the operator. It must be a either:
+
+        addr    A MAC address literal: 6 pairs of hex digits separated by
+                colons, for example de:ad:12:be:ef:34.
+
+        number  A positive integer.

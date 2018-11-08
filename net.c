@@ -41,7 +41,6 @@ int
 readpacket(int socket, struct rawpacket *p)
 {
 	p->len = recvfrom(socket, p->buf, sizeof(p->buf), 0, NULL, NULL);
-	printf("got len: %d\n", p->len);
 	if (p->len < 0) {
 		fprintf(stderr, "Error receiving packet: %s\n", strerror(errno));
 		return -1;

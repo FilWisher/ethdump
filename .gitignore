@@ -1,2 +1,3 @@
 *.o
+y.tab.c
 ethdump

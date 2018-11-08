@@ -9,10 +9,13 @@
 
 #include "ethdump.h"
 
+char *rawfilter;
+extern struct filter filter;
+
 void
 usage(char * const *argv)
 {
-	fprintf(stderr, "Usage: %s -i interface\n", argv[0]);
+	fprintf(stderr, "Usage: %s [-f filter] -i interface\n", argv[0]);
 }
 
 int
@@ -27,10 +30,22 @@ main(int argc, char * const *argv)
 	packet.iph = (struct iphdr *)((rawpacket.buf) + sizeof(struct ether_header));
 	packet.buf = (char *)(rawpacket.buf + sizeof(struct ether_header) + sizeof(struct iphdr));
 
-	while ((opt = getopt(argc, argv, "i:")) != -1) {
+	while ((opt = getopt(argc, argv, "i:f:")) != -1) {
 		switch (opt) {
 		case 'i':
 			device = strndup(optarg, PATH_MAX);
+			if (!device) {
+				fprintf(stderr, "Out of memory, could not copy device\n");
+				return -1;
+			}
+			break;
+		case 'f':
+			// XXX: No reason to use PATH_MAX here. Decide a real limit.
+			rawfilter = strndup(optarg, PATH_MAX);
+			if (!rawfilter) {
+				fprintf(stderr, "Out of memory, could not copy filter\n");
+				return -1;
+			}
 			break;
 		default:
 			usage(argv);
@@ -43,6 +58,12 @@ main(int argc, char * const *argv)
 		exit(1);
 	}
 
+	if (rawfilter != NULL) {
+		if (parsefilter() != 0)
+			return -1;
+	}
+
+
 	sock = rawsocket(device);
  	if (sock < 0)
  		return 1;
@@ -51,7 +72,28 @@ main(int argc, char * const *argv)
 		if (readpacket(sock, &rawpacket) != 0)
 			continue;
 		packet.len = rawpacket.len - (sizeof(struct ether_header) + sizeof(struct iphdr));
-		if (!filterpacket(&packet))
+		if (rawfilter == NULL || filterpacket(&packet, &filter) == Show)
 			displaypacket(&packet);
 	}
 }
+
+
+int
+main2(int argc, char * const *argv)
+{
+	if (argc < 2) {
+		fprintf(stderr, "Not enough arguments\n");
+		return 1;
+	}
+
+	rawfilter = argv[1];
+	if (parsefilter() != 0)
+		return -1;
+
+
+	printf("field = `%s`, operator = `%s`, value = ", filter.field, filter.op);
+	printvalue(filter.value);
+	printf("\n");
+	return 0;
+}
+
