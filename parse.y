@@ -31,16 +31,10 @@ typedef struct {
 	char *string;
 	struct value value;
     } v;
-} yystype;
-
-#define YYSTYPE yystype
-
-FILE *yyfp;
+} YYSTYPE;
 
 void yyerror(const char *, ...);
 int yylex(void);
-
-typedef struct person person;
 
 extern char *rawfilter;
 struct stringsource src = {
