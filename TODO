@@ -1,9 +1,5 @@
 TODO
 
-o Define a simple filter language for filtering packets.
-o Parse the filter from the command line.
-o Evaluate the filters given a packet.
-
 o Define a simple display format language for displaying packets.
 o Parse the display format from the command line.
 o Display the packet give the display format. 
