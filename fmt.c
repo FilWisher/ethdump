@@ -55,7 +55,7 @@ displaytype(uint16_t t)
 		break;
 	}
 
-	printf(" (%x)", t);
+	printf(" (%x)", ntohs(t));
 }
 
 // Display the packet according to a specification.
