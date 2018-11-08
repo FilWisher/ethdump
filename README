@@ -8,6 +8,8 @@ SYNOPSIS
                -i interface
 
 DESCRIPTION
+        An incomplete, slow, and bug-ridden implemention of tcpdump except only
+        for fields of the ethernet header.
 
 OPTIONS
        -i     Specify the network interface to dump ethernet packets from.
