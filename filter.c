@@ -45,13 +45,14 @@ ethtype(struct packet *p)
 {
 	struct value value;
 	value.type = Number;
-	value.v.number = p->eh->ether_type;
+	value.v.number = ntohs(p->eh->ether_type);
 	return value;
 }
 
 struct field_ent fieldtable[] = {
-	{ .name = "src", .fn = ethsrc },
-	{ .name = "dst", .fn = ethdst },
+	{ .name = "src",  .fn = ethsrc },
+	{ .name = "dst",  .fn = ethdst },
+	{ .name = "type", .fn = ethtype },
 	{ NULL },
 };
 

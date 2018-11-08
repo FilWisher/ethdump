@@ -52,34 +52,17 @@ struct filter filter;
 
 %}
 
-%token <v.value.v.addr> ADDR
+%token <v.value> VALUE
 %token <v.string> IDENTIFIER
 %token <v.string> OPERATOR
-%type <v.string> op
-%type <v.string> field
-%type <v.value> value
 
 %%
 
-top:		field op value {
+top:		IDENTIFIER OPERATOR VALUE {
    			filter.field = $1;
    			filter.op = $2;
 			filter.value = $3;
 		};
-
-filter:		  /* empty */
-      		| field op value
-		| field op
-		;
-
-field:		IDENTIFIER;
-op:		OPERATOR;
-value: 	    	ADDR {
-     			int i;
-			for (i = 0; i < ETH_ALEN; i++)
-				$$.v.addr[i] = $1[i];  
-		};
-
 %%
 
 int
@@ -171,19 +154,21 @@ yylex(void)
 		*p++ = c;
 
 		c = getch(&src);
-		if (!isxdigit(c) && c != ':') {
+		if (!isxdigit(c) && c != ':' && c != EOF) {
 			if (i == 0) {
 				ungetch(c, &src);
+				while (p > buf)
+					ungetch(*--p, &src);
 				goto identifier;
 			} else {
 				yyerror("Not a valid MAC address");
-				return 1;
+				return -11;
 			}
 		}
-		if (c != ':')
-			*p++ = c;
-		else
+		if (c == ':')
 			ungetch(c, &src);
+		else
+			*p++ = c;
 
 		*p = '\0';
 		yylval.v.value.type = Address;
@@ -194,10 +179,10 @@ yylex(void)
 			return 1;
 		}
 	}
-	return ADDR;
+	return VALUE;
 
 identifier:
-	while ((c = getch(&src)) != EOF && (isalnum(c) || c == '.')) {
+	while ((c = getch(&src)) != EOF && (isalpha(c) || c == '.')) {
 		if (p + 1 >= end) {
 			yyerror("identifier too long");
 			return -1;
@@ -211,6 +196,44 @@ identifier:
 		yylval.v.string = strndup(buf, MAXBUF);
 		return IDENTIFIER;
 	}
+
+	// numbers
+	if (isdigit(c = getch(&src))) {
+		*p++ = c;
+		// hex literal
+		if ((c = getch(&src)) == 'x' || c == 'X') {
+			*p++ = c;
+			while (isxdigit(c = getch(&src)))
+				*p++ = c;
+			if (c != EOF && c != ' ' && c != '\t' && c != '\n') {
+				yyerror("Invalid hex literal: %c", c);
+				return -1;
+			}
+			ungetch(c, &src);
+			*p = '\0';
+			// XXX: (stupidly) assuming everything is fine here...
+			yylval.v.value.type = Number;
+			yylval.v.value.v.number = strtol(buf, NULL, 0);
+			return VALUE;
+		}
+		// decimal literal
+		if (isdigit(c)) {
+			*p++ = c;
+			while (isdigit(c = getch(&src)))
+				*p++ = c;
+			if (c != EOF && c != ' ' && c != '\t' && c != '\n') {
+				yyerror("Invalid decimal literal: %c", c);
+				return -1;
+			}
+			*p = '\0';
+			yylval.v.value.type = Number;
+			yylval.v.value.v.number = strtol(buf, NULL, 10);
+			return VALUE;
+		}
+		yyerror("Not a valid number");
+		return -1;
+	} else
+		ungetch(c, &src);
 		
 	// operators
 	switch (c = getch(&src)) {
@@ -240,6 +263,5 @@ parsefilter()
 {
 	src.data = rawfilter;
 	src.b = src.buf;
-	
 	return yyparse();
 }

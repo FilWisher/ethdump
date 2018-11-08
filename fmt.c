@@ -54,6 +54,8 @@ displaytype(uint16_t t)
 		printf("used to test interfaces");
 		break;
 	}
+
+	printf(" (%x)", t);
 }
 
 // Display the packet according to a specification.
