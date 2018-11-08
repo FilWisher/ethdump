@@ -1,5 +1,9 @@
 TODO
 
+o Parse multiple filters
+o Sanity check fields and operators in once a filter is parsed instead of
+  runtime.
+
 o Define a simple display format language for displaying packets.
 o Parse the display format from the command line.
 o Display the packet give the display format. 

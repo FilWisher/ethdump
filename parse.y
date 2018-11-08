@@ -140,7 +140,7 @@ yylex(void)
 {   
 	char buf[MAXBUF];
 	char *p, *end;
-	int c, i, j;
+	int c, i;
 
 	p = buf;
 	end = buf + MAXBUF;
@@ -155,24 +155,35 @@ yylex(void)
 	for (i = 0; i < ETH_ALEN; i++) {
 		p = buf;
 
-		for (j = 0; j < 2; j++) {
-			if ((c = getch(&src)) == EOF) {
-				yyerror("Incomplete MAC address");
+		if ((c = getch(&src)) == EOF) {
+			yyerror("Incomplete MAC address");
+			return 1;
+		}
+		if (!isxdigit(c)) {
+			if (i == 0) {
+				ungetch(c, &src);
+				goto identifier;
+			} else {
+				yyerror("Not a valid MAC address");
 				return 1;
 			}
-			if (!isxdigit(c)) {
-				if (i == 0) {
-					while (p > buf)
-						ungetch(*--p, &src);
-					ungetch(c, &src);
-					goto identifier;
-				} else {
-					yyerror("Not a valid MAC address");
-					return 1;
-				}
-			}
-			*p++ = c;
 		}
+		*p++ = c;
+
+		c = getch(&src);
+		if (!isxdigit(c) && c != ':') {
+			if (i == 0) {
+				ungetch(c, &src);
+				goto identifier;
+			} else {
+				yyerror("Not a valid MAC address");
+				return 1;
+			}
+		}
+		if (c != ':')
+			*p++ = c;
+		else
+			ungetch(c, &src);
 
 		*p = '\0';
 		yylval.v.value.type = Address;
