@@ -11,15 +11,18 @@ struct packet {
 };
 
 enum {
-	Address,
+	None,
+	EthAddr,
+	IP4Addr,
 	Number,
 };
 
 struct value {
 	int type;
 	union {
+		uint8_t ethaddr[ETH_ALEN];
+		uint32_t ipaddr;
 		int number;
-		uint8_t addr[ETH_ALEN];
 	} v;
 };
 
@@ -39,6 +42,7 @@ int readpacket(int socket, struct rawpacket *p);
 int rawsocket(const char *name);
 int filterpacket(struct packet *p, struct filter *f);
 void displaypacket(struct packet *p);
+void displayip4addr(uint32_t ip);
 int parsefilter();
 void printvalue(struct value value);
 void error(const char *fmt, ...);

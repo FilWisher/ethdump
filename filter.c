@@ -3,6 +3,7 @@
 #include <string.h>
 #include <netinet/in.h>
 #include <linux/if_ether.h>
+#include <linux/ip.h>
 #include <net/ethernet.h>
 
 #include "ethdump.h"
@@ -16,13 +17,54 @@ struct field_ent {
 };
 
 struct value
+ipsrc(struct packet *p)
+{
+	struct value value;
+	if (ntohs(p->eh->ether_type) != ETHERTYPE_IP) {
+		value.type = None;
+		return value;
+	}
+	value.type = IP4Addr;
+	value.v.ipaddr = ntohl(p->iph->saddr);
+
+	return value;
+}
+
+struct value
+ipdst(struct packet *p)
+{
+	struct value value;
+	if (ntohs(p->eh->ether_type) != ETHERTYPE_IP) {
+		value.type = None;
+		return value;
+	}
+	value.type = IP4Addr;
+	value.v.ipaddr = ntohl(p->iph->daddr);
+
+	return value;
+}
+
+struct value
+ipproto(struct packet *p)
+{
+	struct value value;
+	if (htons(p->eh->ether_type) != ETHERTYPE_IP) {
+		value.type = None;
+		return value;
+	}
+	value.type = Number;
+	value.v.number = p->iph->protocol;
+	return value;
+}
+
+struct value
 ethsrc(struct packet *p) {
 	int i;
 	struct value value;
 
-	value.type = Address;
+	value.type = EthAddr;
 	for (i = 0; i < ETH_ALEN; i++)
-		value.v.addr[i] = p->eh->ether_shost[i];
+		value.v.ethaddr[i] = p->eh->ether_shost[i];
 
 	return value;
 }
@@ -33,9 +75,9 @@ ethdst(struct packet *p)
 	int i;
 	struct value value;
 
-	value.type = Address;
+	value.type = EthAddr;
 	for (i = 0; i < ETH_ALEN; i++)
-		value.v.addr[i] = p->eh->ether_dhost[i];
+		value.v.ethaddr[i] = p->eh->ether_dhost[i];
 
 	return value;
 }
@@ -50,9 +92,12 @@ ethtype(struct packet *p)
 }
 
 struct field_ent fieldtable[] = {
-	{ .name = "src",  .fn = ethsrc },
-	{ .name = "dst",  .fn = ethdst },
-	{ .name = "type", .fn = ethtype },
+	{ .name = "ethsrc",  .fn = ethsrc },
+	{ .name = "ethdst",  .fn = ethdst },
+	{ .name = "ethtype", .fn = ethtype },
+	{ .name = "ipsrc",   .fn = ipsrc },
+	{ .name = "ipdst",   .fn = ipdst },
+	{ .name = "iptype",  .fn = ipproto },
 	{ NULL },
 };
 
@@ -75,13 +120,17 @@ notequals(struct value *lhs, struct value *rhs)
 		return 1;
 
 	switch (lhs->type) {
+	case None:
+		return 0;
 	case Number:
 		return lhs->v.number != rhs->v.number;
-	case Address:
+	case EthAddr:
 		for (i = 0; i < ETH_ALEN; i++)
-			if (lhs->v.addr[i] == rhs->v.addr[i])
+			if (lhs->v.ethaddr[i] == rhs->v.ethaddr[i])
 				return 0;
 		return 1;
+	case IP4Addr:
+		return lhs->v.ipaddr != rhs->v.ipaddr;
 	}
 
 	return 0;
@@ -100,13 +149,17 @@ equals(struct value *lhs, struct value *rhs)
 		return 0;
 
 	switch (lhs->type) {
+	case None:
+		return 1;
 	case Number:
 		return lhs->v.number == rhs->v.number;
-	case Address:
+	case EthAddr:
 		for (i = 0; i < ETH_ALEN; i++)
-			if (lhs->v.addr[i] != rhs->v.addr[i])
+			if (lhs->v.ethaddr[i] != rhs->v.ethaddr[i])
 				return 0;
 		return 1;
+	case IP4Addr:
+		return lhs->v.ipaddr == rhs->v.ipaddr;
 	}
 
 	return 0;
@@ -126,9 +179,9 @@ printvalue(struct value value)
 	case Number:
 		printf("%d", value.v.number);
 		break;
-	case Address:
+	case EthAddr:
 		for (i = 0; i < ETH_ALEN; i++) {
-			printf("%x", value.v.addr[i]);
+			printf("%x", value.v.ethaddr[i]);
 			if (i < ETH_ALEN - 1)
 				printf(":");
 		}

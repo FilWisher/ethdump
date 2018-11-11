@@ -77,6 +77,19 @@ getch(struct stringsource *src)
 	return c;
 }
 
+int
+peekch(struct stringsource *src)
+{
+	if (src->b > src->buf) {
+		return *(src->b-1);
+	}
+
+	if (src->data[src->pos] == '\0')
+		return EOF;
+
+	return src->data[src->pos];
+}
+
 void
 ungetch(int c, struct stringsource *src)
 {
@@ -117,7 +130,7 @@ yylex(void)
 {   
 	char buf[MAXBUF];
 	char *p, *end;
-	int c, i;
+	int c, i, b;
 
 	p = buf;
 	end = buf + MAXBUF;
@@ -164,9 +177,15 @@ yylex(void)
 		else
 			*p++ = c;
 
+		if (isdigit(peekch(&src))) {
+			while (p > buf)
+				ungetch(*--p, &src);
+			goto number;
+		}
+
 		*p = '\0';
-		yylval.v.value.type = Address;
-		yylval.v.value.v.addr[i] = strtol(buf, NULL, 16);
+		yylval.v.value.type = EthAddr;
+		yylval.v.value.v.ethaddr[i] = strtol(buf, NULL, 16);
 
 		if (i != ETH_ALEN - 1 && (c = getch(&src)) != ':') {
 			if (isdigit(c)) {
@@ -219,6 +238,8 @@ number:
 			*p++ = c;
 			while (isdigit(c = getch(&src)))
 				*p++ = c;
+			if (c == '.')
+				goto ipaddr;
 			if (c != EOF && c != ' ' && c != '\t' && c != '\n') {
 				yyerror("Invalid decimal literal: %c", c);
 				return -1;
@@ -228,10 +249,41 @@ number:
 			yylval.v.value.v.number = strtol(buf, NULL, 10);
 			return VALUE;
 		}
-		yyerror("Not a valid number");
+		yyerror("Not a valid number: %c", c);
 		return -1;
 	} else
 		ungetch(c, &src);
+
+ipaddr:
+	if (p > buf) {
+		*p = '\0';
+		yylval.v.value.v.ipaddr = 0;
+		b = atoi(buf);
+		if (b > 255 || b < 0) {
+			yyerror("Invalid IP byte");
+			return -1;
+		}
+		yylval.v.value.v.ipaddr |= b << 24;
+
+		for (i = 0; i < 3; i++) {
+			p = buf;
+			while (isdigit(c = getch(&src)))
+				*p++ = c;
+			if (i < 2 && c != '.') {
+				yyerror("Invalid IP address");
+				return -1;
+			}
+			*p = '\0';
+			b = atoi(buf);
+			if (b > 255 || b < 0) {
+				yyerror("Invalid IP byte");
+				return -1;
+			}
+			yylval.v.value.v.ipaddr |= b << (8 * (2-i));
+		}
+		yylval.v.value.type = IP4Addr;
+		return VALUE;
+	}
 		
 	// operators
 	switch (c = getch(&src)) {
