@@ -76,24 +76,3 @@ main(int argc, char * const *argv)
 			displaypacket(&packet);
 	}
 }
-
-
-int
-main2(int argc, char * const *argv)
-{
-	if (argc < 2) {
-		fprintf(stderr, "Not enough arguments\n");
-		return 1;
-	}
-
-	rawfilter = argv[1];
-	if (parsefilter() != 0)
-		return -1;
-
-
-	printf("field = `%s`, operator = `%s`, value = ", filter.field, filter.op);
-	printvalue(filter.value);
-	printf("\n");
-	return 0;
-}
-
